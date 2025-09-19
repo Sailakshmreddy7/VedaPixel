@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { getAllEvents, bookEvent } from "../api";
 import EventCard from "../components/EventCard";
-import { useNavigate } from "react-router-dom";
+import { data, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import axios from "axios";
 
 function EventsPage() {
     const navigate = useNavigate();
@@ -12,17 +13,59 @@ function EventsPage() {
     const [registeringId, setRegisteringId] = useState(null);
     const [messages, setMessages] = useState({});
 
-    const handleRegister = async (id) => {
+    const handleRegister = async (id, amount) => {
         setRegisteringId(id);
         setMessages((prev) => ({ ...prev, [id]: "" }));
+        console.log(id,amount)
+
         try {
-            await bookEvent(id);
-            await fetchEvents();
-            setMessages((prev) => ({ ...prev, [id]: "Successfully registered for the event!" }));
+            // 1. Create order on backend
+            const { data: order } = await axios.post(
+                `${import.meta.env.VITE_API_URL}/payment/create-order`,
+                { amount }
+            );
+            console.log(data);
+    
+            // 2. Open Razorpay checkout
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: order.amount,
+                currency: order.currency,
+                order_id: order.id,
+                name: "Pixel Vibe Events",
+                description: "Event Registration Payment",
+                handler: async function (response) {
+                    console.log("Payment Success:", response);
+    
+                    // Optional: Verify payment on backend
+                    const verify = await axios.post(
+                        `${import.meta.env.VITE_API_URL}/payment/verify`,
+                        response
+                    );
+                    console.log("Verification:", verify.data);
+    
+                    // 3. Register for the event after successful payment
+                    await bookEvent(id);
+                    await fetchEvents();
+                    setMessages((prev) => ({
+                        ...prev,
+                        [id]: "Successfully registered for the event!",
+                    }));
+                },
+                prefill: {
+                    name: "Pranay Kumar Reddy",
+                    email: "pranay@example.com",
+                },
+                theme: { color: "#3399cc" },
+            };
+    
+            const rzp = new window.Razorpay(options);
+            rzp.open();
         } catch (err) {
+            console.log(err)
             setMessages((prev) => ({
                 ...prev,
-                [id]: err?.response?.data?.message || "Failed to register for the event."
+                [id]: err?.response?.data?.message || "Failed to register for the event.",
             }));
         } finally {
             setRegisteringId(null);
@@ -76,12 +119,12 @@ function EventsPage() {
             <div className="grid max-w-6xl gap-8 mx-auto sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
                 {events.map((event) => (
                     <EventCard
-                        key={event._id}
-                        event={event}
-                        handleRegister={handleRegister}
-                        loading={registeringId === event._id}
-                        message={messages[event._id] || ""}
-                    />
+                    key={event._id}
+                    event={event}
+                    handleRegister={(id) => handleRegister(id, event.price)}
+                    loading={registeringId === event._id}
+                    message={messages[event._id] || ""}
+                />
                 ))}
             </div>
         </div>
