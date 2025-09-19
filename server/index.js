@@ -35,6 +35,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/booking", bookingRoutes);
+app.use("/api/payment", require("./routes/payment"));
 
 // Basic route to check server status
 app.get("/", (req, res) => {
