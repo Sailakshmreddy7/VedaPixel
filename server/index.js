@@ -3,12 +3,15 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/database");
 const cors = require("cors");
 
-// Enable CORS for all routes
 const corsOptions = {
-  origin: "http://vedapixel-event-booking.surge.sh",
+  origin: [
+    "http://vedapixel-event-booking.surge.sh",
+    "https://vedapixel-event-booking.surge.sh"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
 
 
 dotenv.config();
