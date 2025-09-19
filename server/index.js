@@ -5,10 +5,11 @@ const cors = require("cors");
 
 // Enable CORS for all routes
 const corsOptions = {
-  origin: "*",
+  origin: "http://vedapixel-event-booking.surge.sh",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
 
 dotenv.config();
 const app = express();
